@@ -1,0 +1,4 @@
+ tkinter
+ magic
+ pillow
+ pathlib

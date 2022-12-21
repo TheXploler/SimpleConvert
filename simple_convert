@@ -1,0 +1,176 @@
+#!/bin/env python
+from tkinter import *
+from tkinter import filedialog as fd
+from tkinter import ttk
+import magic
+from PIL import Image
+import pathlib
+from sys import platform
+import os
+
+#Default variables
+file = []
+save_directory = "none"
+convert_options = "none"
+if platform == "linux" or platform == "linux2":
+    combiner = "/"
+elif platform == "darwin":
+    combiner = "/"
+elif platform == "win32":
+    combiner = "\\"
+
+# GUI
+root = Tk()
+root.title("Convert") # Title
+root.geometry("780x640") # Window size
+root.minsize(540, 420) # Minimum window size
+root.configure(bg="#002247") # Background color
+root.grid_rowconfigure(0, weight=1)
+root.grid_columnconfigure(0, weight=1)
+
+# Dropdown menu
+selected_dropdown_options = StringVar()
+dropdown = ttk.Combobox( root , textvariable = selected_dropdown_options)
+dropdown['values'] = []
+dropdown['state'] = 'readonly'
+
+def dropdown_changed(event):
+    global convert_options
+    convert_options = selected_dropdown_options.get()
+    output_label.config(text = f"Your files will be converted to: {selected_dropdown_options.get()}")
+  
+dropdown.bind('<<ComboboxSelected>>', dropdown_changed)
+
+def enable_options():
+    if(file_types[0] == "image"):
+        dropdown['values'] = ["bmp", "dds", "dib", "eps", "icns", "ico", "im", "jpeg", "pcx", "png", "ppm", "sgi", "tga", "tiff", "webp"]
+    elif(file_types[0] == "audio"):
+        dropdown['values'] = ["mp3", "aac", "ogg", "flac", "alac", "wav", "aiff"]
+    elif(file_types[0] == "video"):
+        dropdown['values'] = ["mp3", "aac", "ogg", "flac", "alac", "wav", "aiff", "mp4", "avi", "mkv", "mov", "ogg", "vob", "wmv"]
+    else:
+        dropdown['values'] = ['None']
+    dropdown_label.grid(row=4, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+    dropdown.grid(row=5, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+    output_label.grid(row=6, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+
+def check():
+    if(len(file) == 0):
+        convert_debug.config(text = f"Please select a file to convert!")
+    else:
+        convert_debug.config(text = f"File: OK")
+        save_directory_handler = callable(save_directory)
+        if(save_directory_handler == True or len(save_directory) == 0):
+            convert_debug.config(text = f"Please select a save directory!")
+        else:
+            convert_debug.config(text = f"Save directory: OK")
+            global file_types
+            file_types = []
+            for x in file:
+                file_type = magic.from_file(x, mime = True).split("/")
+                file_types.append(file_type[0])
+            if([file_types[0]]*len(file_types) == file_types):
+                convert_debug.config(text = f"Ready to convert")
+                enable_options()
+            else:
+                convert_debug.config(text = f"Your files need to be the same type!")
+    
+# Open function
+def select_file():
+    global file
+    file = fd.askopenfilenames(
+        title='Please select a file to convert')
+
+    file_label.config(text = f"{len(file)} file(s) selected")
+    check()
+
+open_button = Button(
+    root,
+    text='Select a File',
+    command=select_file
+)
+
+# Save function
+def save_directory():
+    global save_directory
+    save_directory = fd.askdirectory(
+        title='Please select a directory to save your file')
+
+    save_directory_label.config(text = f"Your file(s) will be saved to: {save_directory}")
+    check()
+
+save_directory_button = Button(
+    root,
+    text='Select a save directory',
+    command=save_directory
+)
+  
+# Labels
+file_label = Label( root , text = " ")
+dropdown_label = Label( root , text = "Please select an extension:")
+output_label = Label( root , text = " ")
+save_directory_label = Label( root , text = " ")
+convert_debug = Label( root , text = " ")
+
+def convert():
+    convert_debug.config(text = f"Converting... (This may take a while on larger files)")
+    if(file_types[0] == "image"):
+        try:
+            for x in file:
+                filename = pathlib.Path(x).stem
+                img = Image.open(x)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                img.save(f"{save_directory}{combiner}{filename}.{convert_options}") 
+                convert_debug.config(text = f"Convert successful!")
+        except:
+            convert_debug.config(text = f"Please select a file extension!")
+    elif(file_types[0] == "audio" or file_types[0] == "video"):
+            for x in file:
+                filename = pathlib.Path(x).stem
+                os.system(f"ffmpeg -i {x} {save_directory}{combiner}{filename}.{convert_options}")
+                convert_debug.config(text = f"Convert successful!")
+    else:
+        convert_debug.config(text = f"Unsupported format!")
+
+def check_final():
+    if(len(file) == 0):
+        convert_debug.config(text = f"Please select a file to convert!")
+    else:
+        convert_debug.config(text = f"File: OK")
+        save_directory_handler = callable(save_directory)
+        if(save_directory_handler == True or len(save_directory) == 0):
+            convert_debug.config(text = f"Please select a save directory!")
+        else:
+            convert_debug.config(text = f"Save directory: OK")
+            global file_types
+            file_types = []
+            for x in file:
+                file_type = magic.from_file(x, mime = True).split("/")
+                file_types.append(file_type[0])
+            if([file_types[0]]*len(file_types) == file_types):
+                convert_debug.config(text = f"Ready to convert")
+                print(file_types[0])
+                convert()
+            else:
+                convert_debug.config(text = f"Your files need to be the same type!")
+
+def start_conversion():
+    check_final()
+
+
+# Convert button
+convert_button = Button(
+    root,
+    text='Convert',
+    command=start_conversion
+)
+
+# Arrange GUI
+open_button.grid(row=0, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='news')
+file_label.grid(row=1, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+save_directory_button.grid(row=2, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+save_directory_label.grid(row=3, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+convert_button.grid(row=7, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+convert_debug.grid(row=8, column=0, ipadx=10, ipady=10, padx=10, pady=10, sticky='new')
+root.mainloop()
