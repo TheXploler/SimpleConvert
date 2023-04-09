@@ -1,5 +1,5 @@
 # Simple Convert
-All in one converter for videos, images, and audio
+A shitty all in one converter for videos, images, and audio
 
 ## Installation
 Install Simple Convert with pip
